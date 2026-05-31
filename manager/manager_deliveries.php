@@ -1,31 +1,9 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Manager: Deliveries Pipeline
- * =============================================================
- * Shows orders in the active delivery pipeline for THIS shop:
- *   Accepted | Being Prepared | Shipped
- *
- * Status progression (linear, one direction only):
- *   Accepted  ──→  Being Prepared  ──→  Shipped  ──→  Delivered
- *
- * The manager clicks a single "Next Step" button per order.
- * The next status is computed server-side from the current one —
- * the client never sends the target status directly.
- *
- * SECURITY:
- *   - All queries scope to $shop_id
- *   - Current status fetched fresh from DB at POST time (not from form)
- *   - Transition map enforced server-side (no skipping steps)
- *   - CSRF on all POST forms
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 require_role('manager');
 
-// ── Get manager's shop ────────────────────────────────────────
 $stmt = $conn->prepare("SELECT id, name FROM shops WHERE manager_id = ? LIMIT 1");
 $user_id = current_user_id();
 $stmt->bind_param('i', $user_id);
@@ -49,25 +27,18 @@ $active_nav = 'mgr_deliveries';
 $message      = '';
 $message_type = '';
 
-/*
- * Server-side status transition map.
- * The client NEVER dictates the next status — we look it up here.
- * This prevents a malicious POST from jumping directly to 'Delivered'.
- */
 $next_status_map = [
     'Accepted'       => 'Being Prepared',
     'Being Prepared' => 'Shipped',
     'Shipped'        => 'Delivered',
 ];
 
-// Labels for the "Next Step" button
 $next_label_map = [
     'Accepted'       => '👨‍🍳 Start Preparing',
     'Being Prepared' => '📦 Mark as Shipped',
     'Shipped'        => '✅ Mark as Delivered',
 ];
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
@@ -76,11 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'advance_status' && $order_id > 0) {
 
-        /*
-         * Step 1: Fetch the CURRENT status from the DB.
-         * We never trust the value from $_POST for the current status;
-         * a replay attack could otherwise try to advance a Delivered order.
-         */
+        
         $stmt = $conn->prepare(
             "SELECT status FROM orders WHERE id = ? AND shop_id = ? LIMIT 1"
         );
@@ -95,14 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $current_status = $row['status'];
 
-            // Step 2: Look up the valid next status.
+            
+
             if (!array_key_exists($current_status, $next_status_map)) {
                 $message      = "Order #$order_id is already at its final status: '$current_status'.";
                 $message_type = 'error';
             } else {
                 $new_status = $next_status_map[$current_status];
 
-                // Step 3: Update — WHERE includes current status to prevent race conditions.
+                
+
                 $stmt = $conn->prepare(
                     "UPDATE orders
                      SET    status = ?
@@ -125,8 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Fetch pipeline orders for THIS shop ───────────────────────
-// Include Accepted, Being Prepared, Shipped (exclude Pending & Delivered).
 $stmt = $conn->prepare("
     SELECT  o.id          AS order_id,
             o.status,
@@ -154,7 +121,6 @@ $stmt->execute();
 $raw = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Reconstruct into nested orders array
 $orders = [];
 foreach ($raw as $row) {
     $oid = $row['order_id'];
@@ -196,7 +162,7 @@ include __DIR__ . '/../includes/header.php';
             </p>
         </div>
 
-        <!-- Pipeline stage legend -->
+        
         <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;font-size:.83rem;">
             <span class="badge badge-accepted">Accepted</span>
             <span style="color:var(--text-muted);">→</span>
@@ -223,7 +189,7 @@ include __DIR__ . '/../includes/header.php';
 
         <?php else: ?>
 
-        <!-- ── Delivery Order Cards ────────────────────────── -->
+        
         <?php foreach ($orders as $order):
             $status      = $order['status'];
             $badge_class = match($status) {
@@ -243,7 +209,7 @@ include __DIR__ . '/../includes/header.php';
                 default          => 'var(--border-subtle)'
             } ?>;">
 
-            <!-- Header row -->
+            
             <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:.5rem;">
                 <div>
                     <span style="font-size:1.1rem;font-weight:700;">Order #<?= $order['id'] ?></span>
@@ -254,7 +220,7 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-            <!-- Customer & Delivery info -->
+            
             <div style="background:var(--bg-elevated);border-radius:var(--radius-sm);padding:.7rem 1rem;margin-bottom:1rem;font-size:.87rem;">
                 <div><strong>👤</strong> <?= e($order['customer_name']) ?>
                     <span class="text-muted">(<?= e($order['customer_email']) ?>)</span>
@@ -264,7 +230,7 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
             </div>
 
-            <!-- Items summary (compact) -->
+            
             <div class="table-wrapper" style="margin-bottom:1rem;">
                 <table>
                     <thead>
@@ -286,7 +252,7 @@ include __DIR__ . '/../includes/header.php';
                 </table>
             </div>
 
-            <!-- Total + Advance button -->
+            
             <div class="d-flex justify-between align-center" style="flex-wrap:wrap;gap:.75rem;">
                 <div style="font-size:1rem;font-weight:700;color:var(--gold);">
                     Total: <?= number_format((float)$order['total'], 2) ?> SAR
@@ -313,11 +279,11 @@ include __DIR__ . '/../includes/header.php';
 
         </div>
         <?php endforeach; ?>
-        <!-- ── End Delivery Cards ──────────────────────────── -->
+        
 
         <?php endif; ?>
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

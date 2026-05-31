@@ -1,32 +1,9 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Manager: Products (CRUD + Multi-Image Upload)
- * =============================================================
- * Views (controlled by GET['view']):
- *   default / 'list'  → paginated product list with main image
- *   'add'             → add new product form
- *   'edit'            → edit existing product form
- *
- * POST Actions:
- *   add_product    → validate, INSERT product, loop & upload images
- *   edit_product   → validate, UPDATE product, upload any new images
- *   delete_image   → unlink file, DELETE from pictures
- *   delete_product → unlink ALL images, DELETE product (cascade clears pictures)
- *
- * SECURITY:
- *   - All queries scope to $shop_id (IDOR protection)
- *   - File type validated via getimagesize() (reads actual headers, not just extension)
- *   - Uploaded files stored with uniqid()-generated names (no user input in filename)
- *   - CSRF token on every POST form
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 require_role('manager');
 
-// ── Get manager's shop ────────────────────────────────────────
 $stmt = $conn->prepare(
     "SELECT id, name, type, location, status FROM shops WHERE manager_id = ? LIMIT 1"
 );
@@ -49,31 +26,29 @@ if (!$my_shop) {
 
 $shop_id = (int)$my_shop['id'];
 
-// ── Upload directory ──────────────────────────────────────────
-// Ensure the upload directory exists. Creates it recursively if needed.
 $upload_dir = __DIR__ . '/../uploads/products/';
 if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0755, true);
 }
 
-// ── Allowed image types ───────────────────────────────────────
 $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
 $allowed_exts  = ['jpg', 'jpeg', 'png', 'webp'];
 
-// ── Feedback variables ────────────────────────────────────────
 $message       = '';
 $message_type  = '';
 $upload_errors = [];
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $action = $_POST['action'] ?? '';
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Add New Product
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     if ($action === 'add_product') {
 
         $name        = trim($_POST['name']        ?? '');
@@ -81,7 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price       = (float)($_POST['price']    ?? 0);
         $quantity    = (int)($_POST['quantity']   ?? 0);
 
-        // Server-side validation
+        
+
         if (empty($name)) {
             $message = 'Product name is required.';
             $message_type = 'error';
@@ -95,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $conn->begin_transaction();
             try {
-                // 1. Insert the product record first.
+                
+
                 $stmt = $conn->prepare(
                     "INSERT INTO products (shop_id, name, description, price, quantity)
                      VALUES (?, ?, ?, ?, ?)"
@@ -105,12 +82,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $new_product_id = $conn->insert_id;
                 $stmt->close();
 
-                // 2. Handle multiple file uploads (if any).
+                
+
                 $sort_order = 0;
                 if (!empty($_FILES['images']['name'][0])) {
                     foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
 
-                        // Skip files that had an upload error
+                        
+
                         if ($_FILES['images']['error'][$key] !== UPLOAD_ERR_OK) {
                             $upload_errors[] = "File #{$key}: Upload error code " . $_FILES['images']['error'][$key];
                             continue;
@@ -119,24 +98,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $original_name = $_FILES['images']['name'][$key];
                         $ext           = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
 
-                        // ── Security Check 1: Extension whitelist ──
+                        
+
                         if (!in_array($ext, $allowed_exts, true)) {
                             $upload_errors[] = "'$original_name': Invalid extension (allowed: jpg, png, webp).";
                             continue;
                         }
 
-                        // ── Security Check 2: Read actual image headers ──
-                        // getimagesize() inspects the file's binary headers,
-                        // NOT the user-supplied filename. This catches renamed
-                        // malicious files (e.g., shell.php renamed to shell.jpg).
+                        
+
+                        
+
+                        
+
+                        
+
                         $image_info = @getimagesize($tmp_name);
                         if ($image_info === false || !in_array($image_info['mime'], $allowed_mimes, true)) {
                             $upload_errors[] = "'$original_name': File is not a valid JPEG, PNG, or WebP image.";
                             continue;
                         }
 
-                        // ── Generate a safe, unique filename ──────────────
-                        // Never use the user's original filename on disk.
+                        
+
+                        
+
                         $safe_filename = 'prod_' . $new_product_id . '_' . uniqid('', true) . '.' . $ext;
                         $dest_path     = $upload_dir . $safe_filename;
 
@@ -145,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             continue;
                         }
 
-                        // Insert image record. First image ($sort_order = 0) is the main image.
+                        
+
                         $stmt = $conn->prepare(
                             "INSERT INTO pictures (product_id, filename, sort_order) VALUES (?, ?, ?)"
                         );
@@ -162,7 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? ' (Some images were skipped: ' . implode('; ', $upload_errors) . ')'
                     : '';
 
-                // PRG pattern: redirect after POST to prevent duplicate submissions
+                
+
                 $_SESSION['flash_success'] = "Product '" . htmlspecialchars($name, ENT_QUOTES) . "' added.$msg_extra";
                 header('Location: ' . BASE_URL . '/manager/manager_products.php');
                 exit;
@@ -174,9 +162,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Edit Existing Product
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'edit_product') {
 
         $product_id  = (int)($_POST['product_id'] ?? 0);
@@ -190,7 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'error';
         } else {
 
-            // Verify ownership: product must belong to this manager's shop.
+            
+
             $stmt = $conn->prepare("SELECT id FROM products WHERE id = ? AND shop_id = ? LIMIT 1");
             $stmt->bind_param('ii', $product_id, $shop_id);
             $stmt->execute();
@@ -203,7 +195,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message_type = 'error';
             } else {
 
-                // Update product details.
+                
+
                 $stmt = $conn->prepare(
                     "UPDATE products SET name=?, description=?, price=?, quantity=?
                      WHERE id=? AND shop_id=?"
@@ -212,14 +205,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute();
                 $stmt->close();
 
-                // Find the next sort_order for new images.
+                
+
                 $stmt = $conn->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM pictures WHERE product_id = ?");
                 $stmt->bind_param('i', $product_id);
                 $stmt->execute();
                 $sort_order = (int)$stmt->get_result()->fetch_assoc()['next_order'];
                 $stmt->close();
 
-                // Upload any new images provided.
+                
+
                 if (!empty($_FILES['images']['name'][0])) {
                     foreach ($_FILES['images']['tmp_name'] as $key => $tmp_name) {
                         if ($_FILES['images']['error'][$key] !== UPLOAD_ERR_OK) continue;
@@ -249,18 +244,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Delete Single Image
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'delete_image') {
 
         $image_id   = (int)($_POST['image_id']   ?? 0);
         $product_id = (int)($_POST['product_id'] ?? 0);
 
-        /*
-         * JOIN with products to verify the image belongs to a product
-         * owned by THIS manager's shop. Prevents IDOR attacks.
-         */
+        
         $stmt = $conn->prepare("
             SELECT pi.filename
             FROM   pictures pi
@@ -274,12 +269,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         if ($img) {
-            // 1. Delete the physical file.
+            
+
             $file_path = $upload_dir . $img['filename'];
             if (file_exists($file_path)) {
                 unlink($file_path);
             }
-            // 2. Delete the DB record.
+            
+
             $stmt = $conn->prepare("DELETE FROM pictures WHERE id = ?");
             $stmt->bind_param('i', $image_id);
             $stmt->execute();
@@ -293,14 +290,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . BASE_URL . '/manager/manager_products.php?view=edit&id=' . $product_id);
         exit;
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Delete Entire Product
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'delete_product') {
 
         $product_id = (int)($_POST['product_id'] ?? 0);
 
-        // Verify ownership before doing anything destructive.
+        
+
         $stmt = $conn->prepare("SELECT id FROM products WHERE id = ? AND shop_id = ? LIMIT 1");
         $stmt->bind_param('ii', $product_id, $shop_id);
         $stmt->execute();
@@ -313,14 +314,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stmt->close();
 
-        // 1. Fetch all image filenames before cascading deletes them from DB.
+        
+
         $stmt = $conn->prepare("SELECT filename FROM pictures WHERE product_id = ?");
         $stmt->bind_param('i', $product_id);
         $stmt->execute();
         $images = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
 
-        // 2. Unlink each physical file from the server.
+        
+
         foreach ($images as $img) {
             $file_path = $upload_dir . $img['filename'];
             if (file_exists($file_path)) {
@@ -328,8 +331,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // 3. Delete product from DB.
-        //    ON DELETE CASCADE automatically removes the pictures rows.
+        
+
+        
+
         $stmt = $conn->prepare("DELETE FROM products WHERE id = ? AND shop_id = ?");
         $stmt->bind_param('ii', $product_id, $shop_id);
         $stmt->execute();
@@ -341,7 +346,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Read flash messages (set before PRG redirects) ────────────
 if (!empty($_SESSION['flash_success'])) {
     $message      = $_SESSION['flash_success'];
     $message_type = 'success';
@@ -353,10 +357,8 @@ if (!empty($_SESSION['flash_error'])) {
     unset($_SESSION['flash_error']);
 }
 
-// ── Determine current view ────────────────────────────────────
 $current_view = $_GET['view'] ?? 'list';
 
-// ── Edit view: fetch product & its images ─────────────────────
 $edit_product = null;
 $edit_images  = [];
 if ($current_view === 'edit') {
@@ -381,7 +383,6 @@ if ($current_view === 'edit') {
     $stmt->close();
 }
 
-// ── List view: fetch all products with main image ─────────────
 $products = [];
 if ($current_view === 'list') {
     $stmt = $conn->prepare("
@@ -409,9 +410,7 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="page-content">
 
-        <!-- ======================================================
-             EDIT PRODUCT VIEW
-             ====================================================== -->
+        
         <?php if ($current_view === 'edit' && $edit_product): ?>
 
         <div class="page-header d-flex justify-between align-center" style="flex-wrap:wrap;gap:1rem;">
@@ -460,7 +459,7 @@ include __DIR__ . '/../includes/header.php';
                            value="<?= $edit_product['quantity'] ?>" min="0" required style="max-width:200px;">
                 </div>
 
-                <!-- Existing images gallery with per-image delete -->
+                
                 <?php if (!empty($edit_images)): ?>
                 <div class="form-group">
                     <label class="form-label">Current Images
@@ -492,7 +491,7 @@ include __DIR__ . '/../includes/header.php';
                 </div>
                 <?php endif; ?>
 
-                <!-- Add more images -->
+                
                 <div class="form-group">
                     <label class="form-label" for="ep-imgs">Add More Images
                         <small class="text-muted">(JPG, PNG, WebP)</small>
@@ -506,9 +505,7 @@ include __DIR__ . '/../includes/header.php';
         </div>
 
         <?php else: ?>
-        <!-- ======================================================
-             LIST VIEW (DEFAULT)
-             ====================================================== -->
+        
 
         <div class="page-header d-flex justify-between align-center" style="flex-wrap:wrap;gap:1rem;">
             <div>
@@ -591,11 +588,11 @@ include __DIR__ . '/../includes/header.php';
                         <td><?= date('M j, Y', strtotime($prod['created_at'])) ?></td>
 
                         <td style="white-space:nowrap;">
-                            <!-- Edit -->
+                            
                             <a href="<?= BASE_URL ?>/manager/manager_products.php?view=edit&id=<?= $prod['id'] ?>"
                                class="btn btn-secondary btn-sm">✏️ Edit</a>
 
-                            <!-- Delete -->
+                            
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="csrf_token"   value="<?= e(csrf_token()) ?>">
                                 <input type="hidden" name="action"       value="delete_product">
@@ -615,8 +612,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-
-        <!-- ── ADD PRODUCT MODAL ──────────────────────────── -->
+        
         <div class="modal fade" id="addProductModal" tabindex="-1"
              aria-labelledby="addProductLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -678,11 +674,12 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
         </div>
-        <!-- ── END ADD PRODUCT MODAL ─────────────────────── -->
+        
 
-        <?php endif; // end list view ?>
+        <?php endif; 
+?>
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

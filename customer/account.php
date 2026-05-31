@@ -1,26 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Customer: Account & Address Management
- * =============================================================
- * Sections:
- *   1. Profile — Update name, email, and password
- *   2. Addresses — Add/delete addresses from user_addresses table,
- *                   set one as default (is_default = 1)
- *
- * POST Actions:
- *   update_profile  → UPDATE users SET name, email, [password_hash]
- *   add_address     → INSERT INTO user_addresses
- *   set_default     → UPDATE user_addresses, set is_default flags atomically
- *   delete_address  → DELETE FROM user_addresses (can't delete last address)
- *
- * SECURITY:
- *   - Password only hashed+updated if new password field is non-empty
- *   - Old password verified before allowing password change
- *   - All address actions scope to current_user_id() (IDOR protection)
- *   - CSRF on every POST form
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -33,15 +11,17 @@ $active_nav = 'account';
 $message      = '';
 $message_type = '';
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $action = $_POST['action'] ?? '';
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Update Profile
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     if ($action === 'update_profile') {
 
         $new_name  = trim($_POST['name']         ?? '');
@@ -57,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message      = 'Please enter a valid email address.';
             $message_type = 'error';
         } else {
-            // Check if the new email is taken by another user.
+            
+
             $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1");
             $stmt->bind_param('si', $new_email, $user_id);
             $stmt->execute();
@@ -72,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $do_password = !empty($new_pass);
 
                 if ($do_password) {
-                    // Verify the current password before allowing a change.
+                    
+
                     $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ? LIMIT 1");
                     $stmt->bind_param('i', $user_id);
                     $stmt->execute();
@@ -82,7 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!password_verify($old_pass, $current_hash)) {
                         $message      = 'Current password is incorrect.';
                         $message_type = 'error';
-                        $do_password  = false; // Abort password change
+                        $do_password  = false; 
+
                     } elseif (strlen($new_pass) < 8) {
                         $message      = 'New password must be at least 8 characters.';
                         $message_type = 'error';
@@ -110,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     $stmt->close();
 
-                    // Refresh the session name (shown in nav).
+                    
+
                     $_SESSION['user_name'] = $new_name;
 
                     $message      = 'Profile updated successfully' . ($do_password ? ' (including password)' : '') . '.';
@@ -119,9 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Add Address
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'add_address') {
 
         $new_address  = trim($_POST['address']    ?? '');
@@ -134,7 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->begin_transaction();
             try {
                 if ($make_default) {
-                    // Clear any existing default first.
+                    
+
                     $stmt = $conn->prepare(
                         "UPDATE user_addresses SET is_default = 0 WHERE user_id = ?"
                     );
@@ -143,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->close();
                 }
 
-                // Check if this is the user's first address — make it default automatically.
+                
+
                 $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM user_addresses WHERE user_id = ?");
                 $stmt->bind_param('i', $user_id);
                 $stmt->execute();
@@ -170,14 +159,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Set Default Address
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'set_default') {
 
         $addr_id = (int)($_POST['address_id'] ?? 0);
 
-        // Verify address belongs to this user.
+        
+
         $stmt = $conn->prepare("SELECT id FROM user_addresses WHERE id = ? AND user_id = ? LIMIT 1");
         $stmt->bind_param('ii', $addr_id, $user_id);
         $stmt->execute();
@@ -191,7 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $conn->begin_transaction();
             try {
-                // Remove default from all other addresses for this user.
+                
+
                 $stmt = $conn->prepare(
                     "UPDATE user_addresses SET is_default = 0 WHERE user_id = ?"
                 );
@@ -199,7 +193,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute();
                 $stmt->close();
 
-                // Set this address as default.
+                
+
                 $stmt = $conn->prepare(
                     "UPDATE user_addresses SET is_default = 1 WHERE id = ? AND user_id = ?"
                 );
@@ -218,14 +213,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Delete Address
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'delete_address') {
 
         $addr_id = (int)($_POST['address_id'] ?? 0);
 
-        // Count how many addresses this user has.
+        
+
         $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM user_addresses WHERE user_id = ?");
         $stmt->bind_param('i', $user_id);
         $stmt->execute();
@@ -236,7 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message      = 'You must keep at least one address on your account.';
             $message_type = 'error';
         } else {
-            // Fetch the address to check if it's the default.
+            
+
             $stmt = $conn->prepare(
                 "SELECT is_default FROM user_addresses WHERE id = ? AND user_id = ? LIMIT 1"
             );
@@ -258,7 +258,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     $stmt->close();
 
-                    // If we deleted the default, auto-promote the next available.
+                    
+
                     if ((int)$addr_row['is_default'] === 1) {
                         $stmt = $conn->prepare("
                             UPDATE user_addresses SET is_default = 1
@@ -285,14 +286,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Fetch current user profile ────────────────────────────────
 $stmt = $conn->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ? LIMIT 1");
 $stmt->bind_param('i', $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// ── Fetch user's addresses ────────────────────────────────────
 $stmt = $conn->prepare(
     "SELECT * FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, id ASC"
 );
@@ -317,9 +316,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <?php endif; ?>
 
-    <!-- ═══════════════════════════════════════════════════════
-         SECTION 1: Profile
-         ═══════════════════════════════════════════════════════ -->
+    
     <div class="card" style="margin-bottom:1.5rem;">
         <h3 style="margin:0 0 1.2rem;">✏️ Profile Information</h3>
 
@@ -373,9 +370,7 @@ include __DIR__ . '/../includes/header.php';
         </form>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         SECTION 2: Delivery Addresses
-         ═══════════════════════════════════════════════════════ -->
+    
     <div class="card">
         <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:.5rem;">
             <h3 style="margin:0;">📍 Delivery Addresses</h3>
@@ -387,7 +382,7 @@ include __DIR__ . '/../includes/header.php';
             </button>
         </div>
 
-        <!-- Add Address Form (collapsible) -->
+        
         <div class="collapse" id="addAddressForm">
             <form method="POST" action=""
                   style="background:var(--bg-elevated);border-radius:var(--radius-sm);
@@ -414,7 +409,7 @@ include __DIR__ . '/../includes/header.php';
             </form>
         </div>
 
-        <!-- Address List -->
+        
         <?php if (empty($addresses)): ?>
         <div class="empty-state" style="padding:1.5rem 0;">
             <div class="empty-icon">📍</div>
@@ -429,12 +424,12 @@ include __DIR__ . '/../includes/header.php';
                     border: 1px solid <?= $addr['is_default'] ? 'var(--gold)' : 'var(--border-subtle)' ?>;
                     background: <?= $addr['is_default'] ? 'var(--gold-glow)' : 'var(--bg-elevated)' ?>;">
 
-            <!-- Default badge or icon -->
+            
             <div style="flex-shrink:0;font-size:1.2rem;">
                 <?= $addr['is_default'] ? '⭐' : '📍' ?>
             </div>
 
-            <!-- Address text -->
+            
             <div style="flex:1;font-size:.88rem;">
                 <?= e($addr['address']) ?>
                 <?php if ($addr['is_default']): ?>
@@ -444,11 +439,11 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
             </div>
 
-            <!-- Actions -->
+            
             <div style="display:flex;gap:.4rem;flex-shrink:0;">
 
                 <?php if (!$addr['is_default']): ?>
-                <!-- Set as Default -->
+                
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token"   value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action"       value="set_default">
@@ -459,7 +454,7 @@ include __DIR__ . '/../includes/header.php';
                 </form>
                 <?php endif; ?>
 
-                <!-- Delete -->
+                
                 <form method="POST" action="">
                     <input type="hidden" name="csrf_token"   value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action"       value="delete_address">
@@ -480,11 +475,7 @@ include __DIR__ . '/../includes/header.php';
         <?php endif; ?>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         SECTION 3: Become a Shop Owner
-         Only shown to users who are still 'customer' role.
-         Once they upgrade to 'manager' this section disappears.
-         ═══════════════════════════════════════════════════════ -->
+    
     <?php if (has_role('customer')): ?>
     <div class="card" style="margin-top:1.5rem;border:1px solid var(--gold);
          background:linear-gradient(135deg,var(--bg-card) 70%,rgba(212,175,55,.06) 100%);">

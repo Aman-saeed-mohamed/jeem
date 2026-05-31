@@ -1,19 +1,12 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Manager Sidebar Partial
- * =============================================================
- * Included inside .sidebar-layout on all manager pages.
- * $active_nav is set by the parent page to highlight the correct link.
- * =============================================================
- */
+
 $active_nav = $active_nav ?? '';
-// Pass the shop name into the sidebar if available
+
 $_sidebar_shop = $my_shop ?? null;
 ?>
 <aside class="sidebar">
 
-    <!-- Shop identity -->
+    
     <?php if ($_sidebar_shop): ?>
     <div style="padding:1rem 1.2rem 0.5rem; border-bottom:1px solid var(--border-subtle); margin-bottom:0.5rem;">
         <div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;">Managing</div>

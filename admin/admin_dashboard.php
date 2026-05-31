@@ -1,17 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Admin Dashboard
- * =============================================================
- * Displays platform-wide analytics:
- *   - Total Users
- *   - Active Shops
- *   - Total Orders (excluding Canceled, future-proofed)
- *   - Total Sales Revenue (excluding Canceled)
- *   - Pending orders alert
- *   - Last 10 orders quick table
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -20,32 +7,23 @@ require_role('admin');
 $page_title = 'Admin Dashboard';
 $active_nav = 'admin_dash';
 
-// ── Metric 1: Total Users ─────────────────────────────────────
 $result      = $conn->query("SELECT COUNT(*) AS cnt FROM users");
 $total_users = (int)$result->fetch_assoc()['cnt'];
 
-// ── Metric 2: Active Shops ────────────────────────────────────
 $result       = $conn->query("SELECT COUNT(*) AS cnt FROM shops WHERE status = 'active'");
 $active_shops = (int)$result->fetch_assoc()['cnt'];
 
-// ── Metric 3: Total Orders (excluding Canceled) ───────────────
-// NOTE: 'Canceled' is not in the current ENUM (Pending, Accepted,
-// Being Prepared, Shipped, Delivered). This WHERE clause is
-// intentionally future-proof in case 'Canceled' is ever added.
 $result       = $conn->query("SELECT COUNT(*) AS cnt FROM orders WHERE status != 'Canceled'");
 $total_orders = (int)$result->fetch_assoc()['cnt'];
 
-// ── Metric 4: Total Sales Revenue (excluding Canceled) ────────
 $result        = $conn->query(
     "SELECT COALESCE(SUM(total), 0.00) AS revenue FROM orders WHERE status != 'Canceled'"
 );
 $total_revenue = (float)$result->fetch_assoc()['revenue'];
 
-// ── Pending Orders Count (for global alert) ───────────────────
 $result         = $conn->query("SELECT COUNT(*) AS cnt FROM orders WHERE status = 'Pending'");
 $pending_orders = (int)$result->fetch_assoc()['cnt'];
 
-// ── Recent 10 Orders ─────────────────────────────────────────
 $recent_orders = $conn->query("
     SELECT  o.id,
             o.status,
@@ -68,13 +46,13 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="page-content">
 
-        <!-- Page Header -->
+        
         <div class="page-header">
             <h1>📊 Admin Dashboard</h1>
             <p>Platform-wide analytics and real-time overview.</p>
         </div>
 
-        <!-- ── Pending Orders Alert ───────────────────────────── -->
+        
         <?php if ($pending_orders > 0): ?>
         <div class="alert alert-info">
             🔔 There
@@ -85,7 +63,7 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- ── Metrics Grid ───────────────────────────────────── -->
+        
         <div class="metrics-grid">
 
             <div class="metric-card">
@@ -113,9 +91,9 @@ include __DIR__ . '/../includes/header.php';
             </div>
 
         </div>
-        <!-- ── End Metrics ─────────────────────────────────────── -->
+        
 
-        <!-- ── Recent Orders Table ────────────────────────────── -->
+        
         <div class="card">
             <div class="d-flex justify-between align-center mb-2">
                 <h3 style="margin:0;">🕐 Recent Orders</h3>
@@ -175,9 +153,9 @@ include __DIR__ . '/../includes/header.php';
                 </table>
             </div>
         </div>
-        <!-- ── End Recent Orders ──────────────────────────────── -->
+        
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

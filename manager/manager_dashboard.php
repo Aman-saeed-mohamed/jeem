@@ -1,25 +1,9 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Manager Dashboard
- * =============================================================
- * Displays 4 shop-scoped metrics:
- *   1. Total products in THEIR shop
- *   2. Pending orders for THEIR shop
- *   3. Total orders for THEIR shop
- *   4. Total Sales SAR (excluding 'Canceled')
- *
- * Shows a Bootstrap alert if any orders are Pending.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 require_role('manager');
 
-// ── Get this manager's assigned shop ──────────────────────────
-// If no shop is assigned yet (edge case: admin set role but no shop),
-// we show a friendly error instead of broken metrics.
 $stmt = $conn->prepare(
     "SELECT id, name, type, location, status FROM shops WHERE manager_id = ? LIMIT 1"
 );
@@ -47,14 +31,12 @@ $shop_id    = (int)$my_shop['id'];
 $page_title = 'Manager Dashboard';
 $active_nav = 'mgr_dash';
 
-// ── Metric 1: Total Products in THEIR shop ────────────────────
 $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM products WHERE shop_id = ?");
 $stmt->bind_param('i', $shop_id);
 $stmt->execute();
 $total_products = (int)$stmt->get_result()->fetch_assoc()['cnt'];
 $stmt->close();
 
-// ── Metric 2: Pending Orders for THEIR shop ───────────────────
 $stmt = $conn->prepare(
     "SELECT COUNT(*) AS cnt FROM orders WHERE shop_id = ? AND status = 'Pending'"
 );
@@ -63,17 +45,12 @@ $stmt->execute();
 $pending_orders = (int)$stmt->get_result()->fetch_assoc()['cnt'];
 $stmt->close();
 
-// ── Metric 3: Total Orders for THEIR shop ────────────────────
 $stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM orders WHERE shop_id = ?");
 $stmt->bind_param('i', $shop_id);
 $stmt->execute();
 $total_orders = (int)$stmt->get_result()->fetch_assoc()['cnt'];
 $stmt->close();
 
-// ── Metric 4: Total Sales SAR (excluding Canceled) ───────────
-// NOTE: 'Canceled' is referenced here for future-proofing.
-// If your orders ENUM does not include 'Canceled', this query
-// simply returns the sum of ALL orders, which is still correct.
 $stmt = $conn->prepare(
     "SELECT COALESCE(SUM(total), 0.00) AS revenue
      FROM   orders
@@ -84,7 +61,6 @@ $stmt->execute();
 $total_revenue = (float)$stmt->get_result()->fetch_assoc()['revenue'];
 $stmt->close();
 
-// ── Recent 8 Orders for this shop ────────────────────────────
 $stmt = $conn->prepare("
     SELECT  o.id,
             o.status,
@@ -110,7 +86,7 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="page-content">
 
-        <!-- Page Header -->
+        
         <div class="page-header">
             <h1>📊 Manager Dashboard</h1>
             <p>Overview for <strong class="text-gold"><?= e($my_shop['name']) ?></strong>
@@ -118,7 +94,7 @@ include __DIR__ . '/../includes/header.php';
                <?= e($my_shop['location']) ?></p>
         </div>
 
-        <!-- ── PENDING ORDERS ALERT ────────────────────────── -->
+        
         <?php if ($pending_orders > 0): ?>
         <div class="alert alert-info" role="alert">
             🔔 You have <strong><?= $pending_orders ?></strong>
@@ -129,7 +105,7 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- ── Metrics Grid ───────────────────────────────── -->
+        
         <div class="metrics-grid">
 
             <div class="metric-card">
@@ -159,9 +135,9 @@ include __DIR__ . '/../includes/header.php';
             </div>
 
         </div>
-        <!-- ── End Metrics ────────────────────────────────── -->
+        
 
-        <!-- ── Recent Orders Table ────────────────────────── -->
+        
         <div class="card">
             <div class="d-flex justify-between align-center mb-2">
                 <h3 style="margin:0;">🕐 Recent Orders</h3>
@@ -215,9 +191,9 @@ include __DIR__ . '/../includes/header.php';
                 </table>
             </div>
         </div>
-        <!-- ── End Recent Orders ─────────────────────────── -->
+        
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

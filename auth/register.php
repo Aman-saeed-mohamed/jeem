@@ -1,52 +1,35 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Registration Page
- * =============================================================
- * Handles new customer sign-ups.
- *
- * On valid POST:
- *   1. Validates all fields server-side.
- *   2. Checks email uniqueness with a prepared SELECT.
- *   3. Hashes password with bcrypt (PASSWORD_BCRYPT).
- *   4. INSERTs into `users`.
- *   5. INSERTs the provided address into `user_addresses`
- *      as the default address (is_default = 1).
- *   6. Redirects to login with a success flag.
- *
- * Default role is 'customer' — hardcoded, never from $_POST.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
 
-// Block already-authenticated users.
 require_guest();
 
 $errors  = [];
 $success = false;
 
-// ── POST Handler ─────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Sanitize & trim all inputs.
+    
+
     $name            = trim($_POST['name']             ?? '');
     $email           = trim($_POST['email']            ?? '');
     $password        = trim($_POST['password']         ?? '');
     $confirm_password = trim($_POST['confirm_password'] ?? '');
     $address         = trim($_POST['address']          ?? '');
 
-    // ── Validation ───────────────────────────────────────────
+    
 
-    // Name
+    
+
     if (empty($name)) {
         $errors[] = 'Full name is required.';
     } elseif (strlen($name) > 100) {
         $errors[] = 'Name must not exceed 100 characters.';
     }
 
-    // Email
+    
+
     if (empty($email)) {
         $errors[] = 'Email address is required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -55,24 +38,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Email must not exceed 150 characters.';
     }
 
-    // Password
+    
+
     if (empty($password)) {
         $errors[] = 'Password is required.';
     } elseif (strlen($password) < 6) {
         $errors[] = 'Password must be at least 6 characters.';
     }
 
-    // Confirm Password
+    
+
     if ($password !== $confirm_password) {
         $errors[] = 'Passwords do not match.';
     }
 
-    // Address
+    
+
     if (empty($address)) {
         $errors[] = 'Address is required.';
     }
 
-    // ── Email Uniqueness Check ────────────────────────────────
+    
+
     if (empty($errors)) {
         $stmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
         $stmt->bind_param('s', $email);
@@ -85,23 +72,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
     }
 
-    // ── Database Insert ───────────────────────────────────────
+    
+
     if (empty($errors)) {
-        /*
-         * Hash the password with bcrypt.
-         * PASSWORD_DEFAULT currently maps to bcrypt, but using
-         * PASSWORD_BCRYPT is explicit and future-safe.
-         */
+        
         $hashed = password_hash($password, PASSWORD_BCRYPT);
 
-        /*
-         * Use a transaction so that if the address insert fails,
-         * the user row is also rolled back — no orphaned records.
-         */
+        
         $conn->begin_transaction();
 
         try {
-            // 1) Insert user (role defaults to 'customer' in the DB).
+            
+
             $stmt = $conn->prepare(
                 "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)"
             );
@@ -110,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new_user_id = $conn->insert_id;
             $stmt->close();
 
-            // 2) Insert the default address.
+            
+
             $is_default = 1;
             $stmt = $conn->prepare(
                 "INSERT INTO user_addresses (user_id, address, is_default)
@@ -122,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $conn->commit();
 
-            // Redirect to login with a success message in the URL.
+            
+
             header('Location: ' . BASE_URL . '/auth/login.php?registered=1');
             exit;
 
@@ -146,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-<!-- Floating theme toggle (top-right corner on auth pages) -->
 <button id="theme-toggle" onclick="jeemToggleTheme()"
         style="position:fixed;top:1rem;right:1rem;z-index:999;"
         title="Toggle light/dark mode" aria-label="Toggle theme">
@@ -158,17 +141,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="auth-page">
     <div class="auth-card" style="max-width:480px;">
 
-        <!-- ── Brand ─────────────────────────────────── -->
+        
         <div class="auth-brand">
             <div class="logo-text brand-gradient">JEEM MALL</div>
             <div class="tagline">Your premium marketplace destination</div>
         </div>
 
-        <!-- ── Page Title ────────────────────────────── -->
+        
         <h1 class="auth-title">Create an account</h1>
         <p class="auth-subtitle">Join thousands of shoppers on JEEM MALL.</p>
 
-        <!-- ── Error List ────────────────────────────── -->
+        
         <?php if (!empty($errors)): ?>
             <div class="alert alert-error" role="alert">
                 <strong>Please fix the following:</strong>
@@ -180,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <!-- ── Registration Form ─────────────────────── -->
+        
         <form method="POST" action="" novalidate>
 
             <div class="form-group">
@@ -259,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="auth-divider"></div>
 
-        <!-- ── Footer Link ───────────────────────────── -->
+        
         <div class="auth-footer">
             Already have an account?
             <a href="<?= BASE_URL ?>/auth/login.php">Sign in</a>

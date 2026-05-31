@@ -1,14 +1,7 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Shared Footer Partial
- * =============================================================
- * Include at the bottom of every protected page.
- * =============================================================
- */
+
 ?>
 
-<!-- ── Footer ─────────────────────────────────────────────────── -->
 <footer style="
     text-align:center;
     padding: 1.5rem;
@@ -20,13 +13,10 @@
     &copy; <?= date('Y') ?> JEEM MALL. All rights reserved.
 </footer>
 
-<!-- Bootstrap 5.3 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- JEEM MALL custom scripts -->
 <script src="<?= BASE_URL ?>/assets/js/main.js"></script>
 
-<!-- ── Theme Engine ──────────────────────────────────────────── -->
 <script>
 /**
  * jeemToggleTheme()

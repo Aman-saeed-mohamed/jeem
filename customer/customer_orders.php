@@ -1,22 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Customer: My Orders + Cancel with Inventory Restore
- * =============================================================
- * Displays all orders for the logged-in customer, grouped by status.
- *
- * Cancel Logic (ATOMIC TRANSACTION — mirrors manager reject):
- *   1. Verify order belongs to this user AND status is 'Pending' or 'Accepted'
- *   2. SELECT ... FOR UPDATE to lock the order row
- *   3. For each order_line: UPDATE products SET quantity = quantity + ?
- *      (Skip lines where product_id IS NULL — product was deleted)
- *   4. UPDATE orders SET status = 'Canceled'
- *   5. COMMIT — or ROLLBACK on any failure
- *
- * QA Rule: Customer can ONLY cancel 'Pending' or 'Accepted' orders.
- * Once 'Being Prepared', the kitchen/shop has started — no cancellation.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -29,7 +11,6 @@ $active_nav = 'orders';
 $message      = '';
 $message_type = '';
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
@@ -41,12 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
 
         try {
-            /*
-             * Step 1: Lock the order row and verify it:
-             *   - Belongs to THIS customer
-             *   - Is in a cancelable status (Pending or Accepted only)
-             * FOR UPDATE prevents concurrent cancellation + manager accept race.
-             */
+            
             $stmt = $conn->prepare("
                 SELECT id, status FROM orders
                 WHERE  id = ? AND customer_id = ?
@@ -66,10 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
 
-            /*
-             * Step 2: Fetch all line items to determine how much
-             * inventory to restore.
-             */
+            
             $stmt = $conn->prepare(
                 "SELECT product_id, quantity FROM order_line WHERE order_id = ?"
             );
@@ -78,12 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lines = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt->close();
 
-            /*
-             * Step 3: Restore inventory for each line item.
-             * product_id can be NULL if the product was deleted after the
-             * order was placed (order_line uses ON DELETE SET NULL).
-             * We simply skip those — there's nothing to restore.
-             */
+            
             foreach ($lines as $line) {
                 if ($line['product_id'] === null) {
                     continue;
@@ -100,10 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->close();
             }
 
-            /*
-             * Step 4: Mark the order as Canceled.
-             * The AND customer_id check is a second safety net.
-             */
+            
             $stmt = $conn->prepare(
                 "UPDATE orders SET status = 'Canceled'
                  WHERE  id = ? AND customer_id = ?"
@@ -125,8 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Fetch all orders for this customer with line items ────────
-// Single query: JOIN order_line so we can reconstruct nested structure.
 $stmt = $conn->prepare("
     SELECT  o.id          AS order_id,
             o.status,
@@ -150,7 +113,6 @@ $stmt->execute();
 $raw = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Reconstruct: order_id → order data + items[]
 $orders = [];
 foreach ($raw as $row) {
     $oid = $row['order_id'];
@@ -173,7 +135,6 @@ foreach ($raw as $row) {
     ];
 }
 
-// Status that allows customer cancellation
 $cancelable_statuses = ['Pending', 'Accepted'];
 
 include __DIR__ . '/../includes/header.php';
@@ -229,7 +190,7 @@ include __DIR__ . '/../includes/header.php';
              default          => 'var(--border-subtle)'
          } ?>;">
 
-        <!-- Order header -->
+        
         <div class="d-flex justify-between align-center mb-2" style="flex-wrap:wrap;gap:.5rem;">
             <div>
                 <span style="font-weight:700;font-size:1rem;">Order #<?= $order['id'] ?></span>
@@ -240,12 +201,12 @@ include __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-        <!-- Shop info -->
+        
         <div style="font-size:.83rem;color:var(--text-muted);margin-bottom:.75rem;">
             🏪 <?= $order['shop_name'] ? e($order['shop_name']) : '<em>[Shop Removed]</em>' ?>
         </div>
 
-        <!-- Order items -->
+        
         <div class="table-wrapper" style="margin-bottom:.75rem;">
             <table>
                 <thead>
@@ -269,7 +230,7 @@ include __DIR__ . '/../includes/header.php';
             </table>
         </div>
 
-        <!-- Totals + Cancel button -->
+        
         <div class="d-flex justify-between align-center" style="flex-wrap:wrap;gap:.75rem;">
             <div style="font-size:.88rem;color:var(--text-muted);">
                 Subtotal: <?= number_format((float)$order['subtotal'], 2) ?> SAR &nbsp;|&nbsp;

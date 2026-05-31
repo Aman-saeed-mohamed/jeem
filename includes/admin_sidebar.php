@@ -1,13 +1,5 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Admin Sidebar Partial
- * =============================================================
- * Included inside .sidebar-layout on all admin pages.
- * Uses $active_nav (set by the parent page) to highlight the
- * correct menu item.
- * =============================================================
- */
+
 $active_nav = $active_nav ?? '';
 ?>
 <aside class="sidebar">

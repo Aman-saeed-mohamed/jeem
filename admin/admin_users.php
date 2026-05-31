@@ -1,21 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Admin: Manage Users  (MOST CRITICAL PAGE)
- * =============================================================
- * Features:
- *   - View all registered users in a table
- *   - Delete any user (admin is protected from deleting themselves)
- *   - Edit Role via Bootstrap modal:
- *       • Simple role change: customer ↔ admin
- *       • Promote to manager WITH shop assignment:
- *           Option A — Assign to an existing available shop
- *                      (manager_id IS NULL in the shops table)
- *           Option B — Create a brand-new shop for this manager
- *       Both options execute inside an ATOMIC DB TRANSACTION.
- *   - Demoting a manager auto-releases their shop (manager_id → NULL)
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -27,7 +10,6 @@ $active_nav = 'admin_users';
 $message      = '';
 $message_type = '';
 
-// ── Valid shop types ──────────────────────────────────────────
 $shop_types = [
     'coffeeshop'               => 'Coffee Shop',
     'restaurant'               => 'Restaurant',
@@ -40,7 +22,6 @@ $shop_types = [
     'electronics_accessories'  => 'Electronics — Accessories',
 ];
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
@@ -51,21 +32,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message      = 'Invalid user ID.';
         $message_type = 'error';
 
-    // ── Action: Delete User ───────────────────────────────────
+    
+
     } elseif ($action === 'delete_user') {
 
         if ($user_id === current_user_id()) {
-            // Hard rule: admins cannot delete their own account.
+            
+
             $message      = '⚠️ You cannot delete your own account.';
             $message_type = 'error';
         } else {
-            /*
-             * Schema cascades on user DELETE:
-             *   users → orders        (ON DELETE CASCADE)
-             *   users → cart          (ON DELETE CASCADE)
-             *   users → user_addresses(ON DELETE CASCADE)
-             *   shops.manager_id      (ON DELETE SET NULL — shop survives)
-             */
+            
             $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
             $stmt->bind_param('i', $user_id);
             $stmt->execute();
@@ -76,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = $affected > 0 ? 'success' : 'error';
         }
 
-    // ── Action: Edit Role (3-step atomic transaction) ─────────
+    
+
     } elseif ($action === 'edit_role') {
 
         if ($user_id === current_user_id()) {
@@ -94,14 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conn->begin_transaction();
 
                 try {
-                    /*
-                     * ── STEP 1: Release this user's current shop (if any) ──
-                     *
-                     * Whether they're a current manager or not, we NULL-out
-                     * any shop they own. For non-managers this is a safe no-op.
-                     * This must happen BEFORE the role update so the
-                     * manager constraint doesn't block anything.
-                     */
+                    
                     $stmt = $conn->prepare(
                         "UPDATE shops SET manager_id = NULL WHERE manager_id = ?"
                     );
@@ -109,21 +80,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute();
                     $stmt->close();
 
-                    /*
-                     * ── STEP 2: Update the user's role ──────────────────────
-                     */
+                    
                     $stmt = $conn->prepare("UPDATE users SET role = ? WHERE id = ?");
                     $stmt->bind_param('si', $new_role, $user_id);
                     $stmt->execute();
                     $stmt->close();
 
-                    /*
-                     * ── STEP 3: Shop assignment (only for manager role) ──────
-                     */
+                    
                     if ($new_role === 'manager') {
-                        $shop_action = $_POST['shop_action'] ?? ''; // 'existing' | 'new' | ''
+                        $shop_action = $_POST['shop_action'] ?? ''; 
 
-                        // ── Option A: Assign an existing available shop ──────
+                        
+
                         if ($shop_action === 'existing') {
                             $existing_shop_id = (int)($_POST['existing_shop_id'] ?? 0);
 
@@ -131,11 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 throw new Exception('Please select a valid available shop.');
                             }
 
-                            /*
-                             * Re-verify availability with FOR UPDATE row lock.
-                             * Prevents two concurrent admin sessions from
-                             * assigning the same shop to different managers.
-                             */
+                            
                             $stmt = $conn->prepare(
                                 "SELECT id FROM shops
                                  WHERE  id = ? AND manager_id IS NULL
@@ -154,7 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                             $stmt->close();
 
-                            // Assign manager — AND condition is a double safety net.
+                            
+
                             $stmt = $conn->prepare(
                                 "UPDATE shops
                                  SET    manager_id = ?
@@ -164,7 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->execute();
                             $stmt->close();
 
-                        // ── Option B: Create a brand-new shop ───────────────
+                        
+
                         } elseif ($shop_action === 'new') {
                             $shop_name     = trim($_POST['shop_name']     ?? '');
                             $shop_type     = $_POST['shop_type']          ?? '';
@@ -188,11 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $stmt->execute();
                             $stmt->close();
                         }
-                        /*
-                         * If $shop_action is '' (no shop selected), the user
-                         * is promoted to manager but without a shop. The admin
-                         * can assign a shop later via admin_shops.php.
-                         */
+                        
                     }
 
                     $conn->commit();
@@ -209,7 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Fetch all users with shop name (if manager) ───────────────
 $users = $conn->query("
     SELECT  u.id,
             u.name,
@@ -222,8 +183,6 @@ $users = $conn->query("
     ORDER BY u.created_at DESC
 ");
 
-// ── Fetch available shops for the modal dropdown ──────────────
-// Available = manager_id IS NULL (no manager assigned).
 $avail_result    = $conn->query("
     SELECT id, name, type
     FROM   shops
@@ -240,20 +199,20 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="page-content">
 
-        <!-- Page Header -->
+        
         <div class="page-header">
             <h1>👥 Manage Users</h1>
             <p>Edit roles, assign shops to managers, and remove users from the platform.</p>
         </div>
 
-        <!-- Alert Message -->
+        
         <?php if ($message): ?>
         <div class="alert alert-<?= $message_type === 'error' ? 'error' : 'success' ?>">
             <?= e($message) ?>
         </div>
         <?php endif; ?>
 
-        <!-- ── Users Table ──────────────────────────────────── -->
+        
         <div class="card">
             <div class="table-wrapper">
                 <table>
@@ -320,7 +279,7 @@ include __DIR__ . '/../includes/header.php';
                         <td style="white-space:nowrap;">
                         <?php if (!$is_self): ?>
 
-                            <!-- Edit Role → triggers Bootstrap modal -->
+                            
                             <button
                                 class="btn btn-secondary btn-sm btn-edit-role"
                                 id="edit-btn-<?= $user['id'] ?>"
@@ -333,7 +292,7 @@ include __DIR__ . '/../includes/header.php';
                                 ✏️ Edit Role
                             </button>
 
-                            <!-- Delete User (POST + CSRF + JS confirm) -->
+                            
                             <form method="POST" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                 <input type="hidden" name="action"  value="delete_user">
@@ -361,21 +320,16 @@ include __DIR__ . '/../includes/header.php';
                 </table>
             </div>
         </div>
-        <!-- ── End Users Table ──────────────────────────────── -->
+        
 
-
-        <!-- ============================================================
-             EDIT ROLE MODAL
-             Populated via JS data-* attributes on each "Edit Role" button.
-             Handles: customer, admin (simple), manager (with shop section).
-             ============================================================ -->
+        
         <div class="modal fade" id="editRoleModal" tabindex="-1"
              aria-labelledby="editRoleModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content"
                      style="background:var(--bg-card);border:1px solid var(--border-subtle);">
 
-                    <!-- Modal Header -->
+                    
                     <div class="modal-header" style="border-color:var(--border-subtle);">
                         <h5 class="modal-title" id="editRoleModalLabel">
                             ✏️ Edit Role —
@@ -385,16 +339,16 @@ include __DIR__ . '/../includes/header.php';
                                 data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <!-- Modal Form (POST, CSRF-protected) -->
+                    
                     <form method="POST" action="" id="editRoleForm">
                         <div class="modal-body">
 
-                            <!-- Hidden fields populated by JS -->
+                            
                             <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                             <input type="hidden" name="action"  value="edit_role">
                             <input type="hidden" name="user_id" id="modal-user-id" value="">
 
-                            <!-- ── Role Selector ────────────────────────────── -->
+                            
                             <div class="form-group">
                                 <label class="form-label" for="modal-new-role">Assign New Role</label>
                                 <select name="new_role" id="modal-new-role" class="form-control">
@@ -404,14 +358,14 @@ include __DIR__ . '/../includes/header.php';
                                 </select>
                             </div>
 
-                            <!-- ── Manager Section (hidden unless role=manager) ── -->
+                            
                             <div id="manager-section" style="display:none;">
                                 <hr style="border-color:var(--border-subtle);margin:1.2rem 0;">
                                 <h6 style="color:var(--gold);margin-bottom:1rem;font-size:.95rem;">
                                     🏪 Shop Assignment
                                 </h6>
 
-                                <!-- Radio: choose existing or create new -->
+                                
                                 <div class="form-group" style="margin-bottom:1rem;">
                                     <div style="display:flex;gap:2rem;flex-wrap:wrap;">
 
@@ -440,7 +394,7 @@ include __DIR__ . '/../includes/header.php';
                                     </div>
                                 </div>
 
-                                <!-- ── Option A: Existing Shop Dropdown ──────── -->
+                                
                                 <div id="existing-shop-section"
                                      style="display:<?= !empty($available_shops) ? 'block' : 'none' ?>;">
                                     <div class="form-group">
@@ -468,7 +422,7 @@ include __DIR__ . '/../includes/header.php';
                                     </div>
                                 </div>
 
-                                <!-- ── Option B: New Shop Form ───────────────── -->
+                                
                                 <div id="new-shop-section"
                                      style="display:<?= empty($available_shops) ? 'block' : 'none' ?>;">
 
@@ -498,12 +452,12 @@ include __DIR__ . '/../includes/header.php';
                                     </div>
 
                                 </div>
-                                <!-- ── End Manager Shop Section ───────────────── -->
+                                
 
                             </div>
-                            <!-- ── End Manager Section ────────────────────────── -->
+                            
 
-                        </div><!-- /modal-body -->
+                        </div>
 
                         <div class="modal-footer" style="border-color:var(--border-subtle);">
                             <button type="button" class="btn btn-secondary"
@@ -517,17 +471,11 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
         </div>
-        <!-- ── End Edit Role Modal ──────────────────────────── -->
+        
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
-
-<!-- ================================================================
-     MODAL JAVASCRIPT
-     Populates the modal with user data on open, and dynamically
-     shows/hides the manager shop assignment section based on role.
-     ================================================================ -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 

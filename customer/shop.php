@@ -1,15 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Customer: Shop Product Listing
- * =============================================================
- * Displays all products for a given active shop.
- * Each product card shows price, stock badge, and an
- * "Add to Cart" button (disabled if out of stock).
- *
- * Cart is DB-backed (cart table), not session-based.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -25,7 +14,6 @@ if ($shop_id < 1) {
     exit;
 }
 
-// ── Fetch the shop (must be active) ──────────────────────────
 $stmt = $conn->prepare("SELECT * FROM shops WHERE id = ? AND status = 'active' LIMIT 1");
 $stmt->bind_param('i', $shop_id);
 $stmt->execute();
@@ -33,14 +21,14 @@ $shop = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$shop) {
-    // Shop inactive or doesn't exist — redirect away.
+    
+
     header('Location: ' . BASE_URL . '/customer/customer_dashboard.php');
     exit;
 }
 
 $page_title = e($shop['name']);
 
-// ── Fetch all products with their main image ──────────────────
 $stmt = $conn->prepare("
     SELECT  p.*,
             (SELECT filename FROM pictures
@@ -54,10 +42,8 @@ $stmt->execute();
 $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// ── Fetch cart quantities for THIS user for quick "in cart" UI ─
-// We show how many units of each product are already in the cart.
 $user_id = current_user_id();
-$cart_qtys = []; // product_id → qty in cart
+$cart_qtys = []; 
 
 $stmt = $conn->prepare("SELECT product_id, quantity FROM cart WHERE user_id = ?");
 $stmt->bind_param('i', $user_id);
@@ -81,7 +67,6 @@ $type_labels = [
     'electronics_accessories' => 'Electronics Accessories',
 ];
 
-// ── Handle flash messages from add-to-cart redirect ──────────
 $flash_msg  = '';
 $flash_type = '';
 if (!empty($_SESSION['flash_success'])) {
@@ -100,7 +85,7 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="page-content" style="max-width:1200px;margin:0 auto;">
 
-    <!-- Breadcrumb -->
+    
     <div style="font-size:.83rem;color:var(--text-muted);margin-bottom:1rem;">
         <a href="<?= BASE_URL ?>/customer/customer_dashboard.php" style="color:var(--text-muted);">
             🏪 Shops
@@ -108,7 +93,7 @@ include __DIR__ . '/../includes/header.php';
         &rsaquo; <span style="color:var(--text-primary);"><?= e($shop['name']) ?></span>
     </div>
 
-    <!-- Shop Header -->
+    
     <div class="page-header">
         <h1><?= e($shop['name']) ?></h1>
         <p>
@@ -133,7 +118,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
 
     <?php else: ?>
-    <!-- ── Products Grid ──────────────────────────────────── -->
+    
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.2rem;">
 
         <?php foreach ($products as $prod):
@@ -142,7 +127,7 @@ include __DIR__ . '/../includes/header.php';
         ?>
         <div class="card" style="display:flex;flex-direction:column;padding:0;overflow:hidden;">
 
-            <!-- Product image -->
+            
             <a href="<?= BASE_URL ?>/customer/product.php?id=<?= $prod['id'] ?>"
                style="display:block;text-decoration:none;">
                 <?php if ($prod['main_image']): ?>
@@ -158,7 +143,7 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
             </a>
 
-            <!-- Product info -->
+            
             <div style="padding:1rem;flex:1;display:flex;flex-direction:column;gap:.4rem;">
                 <a href="<?= BASE_URL ?>/customer/product.php?id=<?= $prod['id'] ?>"
                    style="text-decoration:none;color:var(--text-primary);">
@@ -185,7 +170,7 @@ include __DIR__ . '/../includes/header.php';
                         </span>
                     <?php endif; ?>
 
-                    <!-- Add to Cart form -->
+                    
                     <form method="POST"
                           action="<?= BASE_URL ?>/customer/cart.php"
                           style="margin-top:.6rem;">
@@ -212,7 +197,7 @@ include __DIR__ . '/../includes/header.php';
         <?php endforeach; ?>
 
     </div>
-    <!-- ── End Products Grid ──────────────────────────────── -->
+    
     <?php endif; ?>
 
 </div>

@@ -1,48 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Customer: Cart  (THE $1,000,000 QA TRAP)
- * =============================================================
- * This file handles THREE responsibilities:
- *
- *  A) POST ACTIONS (cart mutations + checkout):
- *      add_to_cart    → INSERT or UPDATE cart row
- *      update_qty     → UPDATE cart row quantity
- *      remove_item    → DELETE single cart row
- *      clear_cart     → DELETE all cart rows for this user
- *      checkout       → ATOMIC MULTI-VENDOR TRANSACTION (see below)
- *
- *  B) GET VIEW → renders the cart page with all items and totals
- *
- * ────────────────────────────────────────────────────────────
- * CHECKOUT TRANSACTION ALGORITHM  (Multi-Vendor Split)
- * ────────────────────────────────────────────────────────────
- *  1. Fetch cart items JOIN products JOIN shops
- *  2. GROUP items by shop_id in PHP
- *  3. BEGIN TRANSACTION
- *  4. FOR EACH ITEM:
- *       SELECT quantity FROM products WHERE id=? FOR UPDATE
- *       IF requested_qty > available → ROLLBACK, show error
- *  5. FOR EACH SHOP GROUP:
- *       Calculate subtotal = Σ(unit_price × qty)
- *       Calculate tax      = subtotal × 0.08
- *       Calculate total    = subtotal + tax
- *       INSERT INTO orders (customer_id, shop_id, subtotal, tax, total)
- *       FOR EACH ITEM IN GROUP:
- *         INSERT INTO order_line (order_id, product_id, product_name,
- *                                 unit_price, quantity)
- *         UPDATE products SET quantity = quantity - ? WHERE id = ?
- *  6. DELETE FROM cart WHERE user_id = ?
- *  7. COMMIT
- *
- * SECURITY:
- *   - Cart scoped to current_user_id() — users can't touch each other's carts
- *   - FOR UPDATE row lock prevents race condition (two users buying last item)
- *   - Prices read from DB at checkout time — never from $_POST
- *   - product_name + unit_price SNAPSHOTTED into order_line (immutable record)
- *   - CSRF on every POST form
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -55,22 +11,25 @@ $active_nav = 'cart';
 $message      = '';
 $message_type = '';
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $action = $_POST['action'] ?? '';
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Add to Cart
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     if ($action === 'add_to_cart') {
 
         $product_id   = (int)($_POST['product_id'] ?? 0);
         $qty_to_add   = max(1, (int)($_POST['quantity'] ?? 1));
         $redirect_to  = $_POST['redirect_to'] ?? '';
 
-        // Verify product exists and the shop is active.
+        
+
         $stmt = $conn->prepare("
             SELECT p.id, p.quantity, p.shop_id
             FROM   products p
@@ -88,13 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($prod['quantity'] < 1) {
             $_SESSION['flash_error'] = 'Sorry, this product is out of stock.';
         } else {
-            /*
-             * If the product is already in the cart, increment quantity.
-             * Cap at actual available stock so we never over-commit.
-             *
-             * ON DUPLICATE KEY UPDATE uses the composite UNIQUE key
-             * (user_id, product_id) defined in the schema.
-             */
+            
             $stmt = $conn->prepare("
                 INSERT INTO cart (user_id, product_id, quantity)
                 VALUES (?, ?, ?)
@@ -108,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_success'] = 'Item added to your cart! 🛒';
         }
 
-        // PRG: redirect back to wherever the user was (shop page or product page).
+        
+
         if (str_starts_with($redirect_to, 'shop&')) {
             parse_str($redirect_to, $params);
             $back = BASE_URL . '/customer/shop.php?id=' . (int)($params['shop_id'] ?? 0);
@@ -121,23 +75,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . $back);
         exit;
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Update Quantity
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'update_qty') {
 
         $product_id = (int)($_POST['product_id'] ?? 0);
         $new_qty    = (int)($_POST['quantity']   ?? 1);
 
         if ($new_qty < 1) {
-            // Treat quantity ≤ 0 as a delete request.
+            
+
             $stmt = $conn->prepare("DELETE FROM cart WHERE user_id = ? AND product_id = ?");
             $stmt->bind_param('ii', $user_id, $product_id);
             $stmt->execute();
             $stmt->close();
             $_SESSION['flash_success'] = 'Item removed from cart.';
         } else {
-            // Cap at actual stock to avoid over-committing.
+            
+
             $stmt = $conn->prepare("
                 UPDATE cart c
                 JOIN   products p ON p.id = c.product_id
@@ -153,9 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . BASE_URL . '/customer/cart.php');
         exit;
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: Remove Single Item
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'remove_item') {
 
         $product_id = (int)($_POST['product_id'] ?? 0);
@@ -168,13 +130,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . BASE_URL . '/customer/cart.php');
         exit;
 
-    // ─────────────────────────────────────────────────────────
-    // ACTION: CHECKOUT — THE $1,000,000 ATOMIC TRANSACTION
-    // ─────────────────────────────────────────────────────────
+    
+
+    
+
+    
+
     } elseif ($action === 'checkout') {
 
-        // ── Step 1: Fetch all cart items with live product/shop data ──
-        // Prices are read FROM THE DATABASE, never from $_POST.
+        
+
+        
+
         $stmt = $conn->prepare("
             SELECT  c.product_id,
                     c.quantity        AS requested_qty,
@@ -198,21 +165,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'error';
         } else {
 
-            // ── Step 2: Group items by shop_id ───────────────────────
+            
+
             $grouped = [];
             foreach ($cart_items as $item) {
                 $sid = (int)$item['shop_id'];
                 $grouped[$sid][] = $item;
             }
 
-            // ── Step 3: BEGIN ATOMIC TRANSACTION ─────────────────────
+            
+
             $conn->begin_transaction();
 
             try {
-                // ── Step 4: FOR UPDATE lock + stock validation ────────
-                // We lock EVERY product row first, before writing anything.
-                // This guarantees that no other transaction can modify
-                // stock for these products while we're processing.
+                
+
+                
+
+                
+
+                
+
                 foreach ($cart_items as $item) {
                     $pid = (int)$item['product_id'];
 
@@ -225,7 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->close();
 
                     if ($item['requested_qty'] > $live_qty) {
-                        // Stock depleted since customer added to cart.
+                        
+
                         $avail_msg = $live_qty === 0
                             ? 'is now out of stock'
                             : "only has $live_qty unit(s) available";
@@ -236,12 +210,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // ── Step 5: CREATE ONE ORDER PER SHOP ────────────────
+                
+
                 $created_order_ids = [];
 
                 foreach ($grouped as $shop_id => $items) {
 
-                    // Calculate order financials for this shop's items.
+                    
+
                     $subtotal = 0.0;
                     foreach ($items as $item) {
                         $subtotal += (float)$item['unit_price'] * (int)$item['requested_qty'];
@@ -250,7 +226,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $total = round($subtotal + $tax, 2);
                     $subtotal = round($subtotal, 2);
 
-                    // INSERT the order row.
+                    
+
                     $stmt = $conn->prepare("
                         INSERT INTO orders (customer_id, shop_id, subtotal, tax, total, status)
                         VALUES (?, ?, ?, ?, ?, 'Pending')
@@ -262,10 +239,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $created_order_ids[] = $order_id;
 
-                    // ── Step 6: INSERT order_line rows (SNAPSHOT) ─────
-                    // Snapshot product_name and unit_price so the order
-                    // record remains accurate even if the product is later
-                    // edited or deleted.
+                    
+
+                    
+
+                    
+
+                    
+
                     foreach ($items as $item) {
                         $pid       = (int)$item['product_id'];
                         $pname     = $item['product_name'];
@@ -281,7 +262,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->execute();
                         $stmt->close();
 
-                        // ── Step 7: Decrement product stock ──────────
+                        
+
                         $stmt = $conn->prepare(
                             "UPDATE products SET quantity = quantity - ? WHERE id = ?"
                         );
@@ -291,13 +273,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // ── Step 8: DELETE the entire cart ───────────────────
+                
+
                 $stmt = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
                 $stmt->bind_param('i', $user_id);
                 $stmt->execute();
                 $stmt->close();
 
-                // ── Step 9: COMMIT ────────────────────────────────────
+                
+
                 $conn->commit();
 
                 $order_count = count($created_order_ids);
@@ -318,7 +302,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Read flash messages (PRG pattern) ────────────────────────
 if (empty($message)) {
     if (!empty($_SESSION['flash_success'])) {
         $message      = $_SESSION['flash_success'];
@@ -331,8 +314,6 @@ if (empty($message)) {
     }
 }
 
-// ── Fetch current cart for display ────────────────────────────
-// LEFT JOIN shops to detect if a shop went inactive since item was added.
 $stmt = $conn->prepare("
     SELECT  c.product_id,
             c.quantity        AS cart_qty,
@@ -355,12 +336,11 @@ $stmt->execute();
 $cart_rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Group for display and calculate grand total
 $cart_by_shop   = [];
 $grand_total    = 0.0;
 $grand_subtotal = 0.0;
 $grand_tax      = 0.0;
-$has_issue      = false; // Flag if any item has stock issues
+$has_issue      = false; 
 
 foreach ($cart_rows as $row) {
     $sid = $row['shop_id'];
@@ -377,7 +357,8 @@ foreach ($cart_rows as $row) {
     $cart_by_shop[$sid]['subtotal'] += $line_total;
     $grand_subtotal += $line_total;
 
-    // Flag issue: out of stock or shop inactive
+    
+
     if ($row['stock_qty'] < $row['cart_qty'] || $row['shop_status'] !== 'active') {
         $has_issue = true;
     }
@@ -386,7 +367,6 @@ foreach ($cart_rows as $row) {
 $grand_tax   = round($grand_subtotal * 0.08, 2);
 $grand_total = round($grand_subtotal + $grand_tax, 2);
 
-// Fetch user's default address for checkout display
 $stmt = $conn->prepare(
     "SELECT address FROM user_addresses WHERE user_id = ? AND is_default = 1 LIMIT 1"
 );
@@ -429,13 +409,13 @@ include __DIR__ . '/../includes/header.php';
 
     <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;" class="cart-layout">
 
-        <!-- LEFT: Cart Items (grouped by shop) -->
+        
         <div>
 
         <?php foreach ($cart_by_shop as $sid => $group): ?>
         <div class="card" style="margin-bottom:1.2rem;">
 
-            <!-- Shop header -->
+            
             <div style="font-weight:700;font-size:.95rem;color:var(--gold);
                         padding-bottom:.75rem;margin-bottom:.75rem;
                         border-bottom:1px solid var(--border-subtle);">
@@ -453,7 +433,7 @@ include __DIR__ . '/../includes/header.php';
             <div style="display:flex;gap:1rem;align-items:center;
                         padding:.75rem 0;border-bottom:1px solid var(--border-subtle);">
 
-                <!-- Thumbnail -->
+                
                 <?php if ($row['main_image']): ?>
                 <img src="<?= BASE_URL ?>/uploads/products/<?= e($row['main_image']) ?>"
                      alt="<?= e($row['product_name']) ?>"
@@ -465,7 +445,7 @@ include __DIR__ . '/../includes/header.php';
                 </div>
                 <?php endif; ?>
 
-                <!-- Name + stock warning -->
+                
                 <div style="flex:1;min-width:0;">
                     <div style="font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         <?= e($row['product_name']) ?>
@@ -484,7 +464,7 @@ include __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <!-- Quantity update form -->
+                
                 <form method="POST" action="" style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
                     <input type="hidden" name="csrf_token"  value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action"      value="update_qty">
@@ -499,12 +479,12 @@ include __DIR__ . '/../includes/header.php';
                            onchange="this.form.submit()">
                 </form>
 
-                <!-- Line total -->
+                
                 <div style="font-weight:700;color:var(--gold);text-align:right;flex-shrink:0;min-width:80px;">
                     <?= number_format($line_total, 2) ?> SAR
                 </div>
 
-                <!-- Remove button -->
+                
                 <form method="POST" action="" style="flex-shrink:0;">
                     <input type="hidden" name="csrf_token"  value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action"      value="remove_item">
@@ -519,7 +499,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
             <?php endforeach; ?>
 
-            <!-- Shop subtotal -->
+            
             <div style="text-align:right;padding-top:.6rem;font-size:.88rem;color:var(--text-muted);">
                 Shop subtotal: <strong style="color:var(--text-primary);">
                     <?= number_format($group['subtotal'], 2) ?> SAR
@@ -529,9 +509,9 @@ include __DIR__ . '/../includes/header.php';
         </div>
         <?php endforeach; ?>
 
-        </div><!-- /cart items -->
+        </div>
 
-        <!-- RIGHT: Order Summary + Checkout -->
+        
         <div>
             <div class="card" style="position:sticky;top:1.5rem;">
                 <h3 style="margin:0 0 1rem;">🧾 Order Summary</h3>
@@ -559,7 +539,7 @@ include __DIR__ . '/../includes/header.php';
                 </p>
                 <?php endif; ?>
 
-                <!-- Delivery address preview -->
+                
                 <div style="margin-top:1rem;padding:.75rem;background:var(--bg-elevated);
                             border-radius:var(--radius-sm);font-size:.83rem;">
                     <div style="font-weight:600;margin-bottom:.3rem;">📍 Delivering to:</div>
@@ -573,7 +553,7 @@ include __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <!-- Checkout Form -->
+                
                 <form method="POST" action="" style="margin-top:1.2rem;">
                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action"     value="checkout">
@@ -604,7 +584,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-    </div><!-- /cart-layout -->
+    </div>
     <?php endif; ?>
 
 </div>

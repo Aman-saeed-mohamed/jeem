@@ -1,17 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Admin: Manage Shops
- * =============================================================
- * Features:
- *   - View all shops with manager info (LEFT JOIN users)
- *   - Create a new shop (available/unassigned, manager_id = NULL)
- *   - Toggle shop status: active ↔ inactive (atomic CASE WHEN)
- *   - Delete shop (CASCADE removes products; orders use SET NULL)
- *
- * All mutating actions use POST + CSRF tokens for security.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -23,7 +10,6 @@ $active_nav = 'admin_shops';
 $message      = '';
 $message_type = '';
 
-// ── Valid shop types (single source of truth) ─────────────────
 $shop_types = [
     'coffeeshop'               => 'Coffee Shop',
     'restaurant'               => 'Restaurant',
@@ -36,25 +22,21 @@ $shop_types = [
     'electronics_accessories'  => 'Electronics — Accessories',
 ];
 
-// ── POST Handler ──────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $action  = $_POST['action']  ?? '';
     $shop_id = (int)($_POST['shop_id'] ?? 0);
 
-    // ── Action: Toggle Status ─────────────────────────────────
+    
+
     if ($action === 'toggle_status') {
 
         if ($shop_id < 1) {
             $message      = 'Invalid shop ID.';
             $message_type = 'error';
         } else {
-            /*
-             * The CASE expression flips the ENUM value atomically
-             * in a single SQL statement — no need to read the current
-             * value first, which would create a race condition.
-             */
+            
             $stmt = $conn->prepare("
                 UPDATE shops
                 SET    status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END
@@ -68,20 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'success';
         }
 
-    // ── Action: Delete Shop ───────────────────────────────────
+    
+
     } elseif ($action === 'delete_shop') {
 
         if ($shop_id < 1) {
             $message      = 'Invalid shop ID.';
             $message_type = 'error';
         } else {
-            /*
-             * Schema cascade behaviour on DELETE:
-             *   shops     → products (ON DELETE CASCADE)
-             *   products  → pictures (ON DELETE CASCADE)
-             *   products  → cart     (ON DELETE CASCADE)
-             *   orders.shop_id      → SET NULL  (financial records kept)
-             */
+            
             $stmt = $conn->prepare("DELETE FROM shops WHERE id = ?");
             $stmt->bind_param('i', $shop_id);
             $stmt->execute();
@@ -92,14 +69,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = $affected > 0 ? 'success' : 'error';
         }
 
-    // ── Action: Create New (Available) Shop ───────────────────
+    
+
     } elseif ($action === 'create_shop') {
 
         $shop_name     = trim($_POST['shop_name']     ?? '');
         $shop_type     = $_POST['shop_type']          ?? '';
         $shop_location = trim($_POST['shop_location'] ?? '');
 
-        // Server-side validation (never trust client-side only).
+        
+
         if (empty($shop_name)) {
             $message      = 'Shop name is required.';
             $message_type = 'error';
@@ -110,11 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message      = 'Shop location is required.';
             $message_type = 'error';
         } else {
-            /*
-             * manager_id is intentionally NULL here.
-             * This creates an "available" shop that appears in the
-             * admin_users.php "Assign Existing Shop" dropdown.
-             */
+            
             $stmt = $conn->prepare(
                 "INSERT INTO shops (manager_id, name, type, location) VALUES (NULL, ?, ?, ?)"
             );
@@ -128,8 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Fetch all shops with manager info ─────────────────────────
-// LEFT JOIN: shops without a manager still appear (manager columns = NULL).
 $shops = $conn->query("
     SELECT  s.id,
             s.name,
@@ -152,26 +125,26 @@ include __DIR__ . '/../includes/header.php';
 
     <div class="page-content">
 
-        <!-- Page Header -->
+        
         <div class="page-header d-flex justify-between align-center" style="flex-wrap:wrap;gap:1rem;">
             <div>
                 <h1>🏪 Manage Shops</h1>
                 <p>Toggle status, delete shops, or create an available shop for future manager assignment.</p>
             </div>
-            <!-- Opens Create Shop modal -->
+            
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createShopModal">
                 + Create Shop
             </button>
         </div>
 
-        <!-- Alert Message -->
+        
         <?php if ($message): ?>
         <div class="alert alert-<?= $message_type === 'error' ? 'error' : 'success' ?>">
             <?= $message ?>
         </div>
         <?php endif; ?>
 
-        <!-- ── Shops Table ──────────────────────────────────── -->
+        
         <div class="card">
             <div class="table-wrapper">
                 <table>
@@ -228,7 +201,7 @@ include __DIR__ . '/../includes/header.php';
 
                             <td style="white-space:nowrap;">
 
-                                <!-- Toggle Status (POST, CSRF-protected) -->
+                                
                                 <form method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="action"  value="toggle_status">
@@ -238,7 +211,7 @@ include __DIR__ . '/../includes/header.php';
                                     </button>
                                 </form>
 
-                                <!-- Delete Shop (POST + confirmation dialog) -->
+                                
                                 <form method="POST" style="display:inline;">
                                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                                     <input type="hidden" name="action"  value="delete_shop">
@@ -261,10 +234,9 @@ include __DIR__ . '/../includes/header.php';
                 </table>
             </div>
         </div>
-        <!-- ── End Shops Table ──────────────────────────────── -->
+        
 
-
-        <!-- ── Create Shop Modal ────────────────────────────── -->
+        
         <div class="modal fade" id="createShopModal" tabindex="-1"
              aria-labelledby="createShopLabel" aria-hidden="true">
             <div class="modal-dialog">
@@ -324,9 +296,9 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
         </div>
-        <!-- ── End Create Shop Modal ────────────────────────── -->
+        
 
-    </div><!-- /page-content -->
-</div><!-- /sidebar-layout -->
+    </div>
+</div>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

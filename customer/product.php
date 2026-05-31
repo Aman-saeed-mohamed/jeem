@@ -1,14 +1,4 @@
 <?php
-/**
- * =============================================================
- * JEEM MALL — Customer: Single Product Detail Page
- * =============================================================
- * Shows full product details with image gallery, description,
- * stock status, and quantity-aware Add to Cart form.
- *
- * Cart is DB-backed (cart table), never $_SESSION.
- * =============================================================
- */
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth_check.php';
@@ -23,7 +13,6 @@ if ($product_id < 1) {
     exit;
 }
 
-// ── Fetch product + its shop (shop must be active) ────────────
 $stmt = $conn->prepare("
     SELECT  p.*,
             s.name     AS shop_name,
@@ -46,14 +35,12 @@ if (!$product) {
 
 $page_title = e($product['name']);
 
-// ── Fetch all product images ordered by sort_order ────────────
 $stmt = $conn->prepare("SELECT * FROM pictures WHERE product_id = ? ORDER BY sort_order ASC");
 $stmt->bind_param('i', $product_id);
 $stmt->execute();
 $images = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// ── How many units does this user already have in cart? ───────
 $user_id = current_user_id();
 $stmt = $conn->prepare("SELECT quantity FROM cart WHERE user_id = ? AND product_id = ? LIMIT 1");
 $stmt->bind_param('ii', $user_id, $product_id);
@@ -62,7 +49,6 @@ $cart_row = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 $in_cart = $cart_row ? (int)$cart_row['quantity'] : 0;
 
-// ── Flash messages ────────────────────────────────────────────
 $flash_msg  = '';
 $flash_type = '';
 if (!empty($_SESSION['flash_success'])) {
@@ -83,7 +69,7 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="page-content" style="max-width:1000px;margin:0 auto;">
 
-    <!-- Breadcrumb -->
+    
     <div style="font-size:.83rem;color:var(--text-muted);margin-bottom:1.2rem;">
         <a href="<?= BASE_URL ?>/customer/customer_dashboard.php" style="color:var(--text-muted);">🏪 Shops</a>
         &rsaquo;
@@ -99,13 +85,13 @@ include __DIR__ . '/../includes/header.php';
     </div>
     <?php endif; ?>
 
-    <!-- ── Product Layout ──────────────────────────────────── -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start;" class="product-layout">
 
-        <!-- LEFT: Image Gallery -->
+        
         <div>
             <?php if (!empty($images)): ?>
-                <!-- Main image -->
+                
                 <div style="border-radius:var(--radius);overflow:hidden;margin-bottom:.75rem;
                             border:1px solid var(--border-subtle);">
                     <img id="main-product-img"
@@ -114,7 +100,7 @@ include __DIR__ . '/../includes/header.php';
                          style="width:100%;height:360px;object-fit:cover;display:block;">
                 </div>
 
-                <!-- Thumbnail strip (if more than 1 image) -->
+                
                 <?php if (count($images) > 1): ?>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
                     <?php foreach ($images as $img): ?>
@@ -139,7 +125,7 @@ include __DIR__ . '/../includes/header.php';
             <?php endif; ?>
         </div>
 
-        <!-- RIGHT: Product Info -->
+        
         <div>
             <h1 style="font-size:1.5rem;margin:0 0 .5rem;"><?= e($product['name']) ?></h1>
 
@@ -159,7 +145,7 @@ include __DIR__ . '/../includes/header.php';
             </p>
             <?php endif; ?>
 
-            <!-- Stock status -->
+            
             <div style="margin-bottom:1.2rem;">
                 <?php if ($out_of_stock): ?>
                     <span class="badge badge-inactive" style="font-size:.85rem;">❌ Out of Stock</span>
@@ -184,7 +170,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
             <?php endif; ?>
 
-            <!-- Add to Cart form with quantity selector -->
+            
             <?php if (!$out_of_stock): ?>
             <form method="POST" action="<?= BASE_URL ?>/customer/cart.php">
                 <input type="hidden" name="csrf_token"  value="<?= e(csrf_token()) ?>">
@@ -210,7 +196,7 @@ include __DIR__ . '/../includes/header.php';
                 </button>
             <?php endif; ?>
 
-            <!-- Back link -->
+            
             <div style="margin-top:1.5rem;">
                 <a href="<?= BASE_URL ?>/customer/shop.php?id=<?= $product['shop_id'] ?>"
                    style="color:var(--text-muted);font-size:.85rem;">
@@ -219,7 +205,7 @@ include __DIR__ . '/../includes/header.php';
             </div>
         </div>
 
-    </div><!-- /product-layout -->
+    </div>
 
 </div>
 
