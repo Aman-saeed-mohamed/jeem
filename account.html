@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - Jeem Mall</title>
+    <link rel="stylesheet" href="css/customer.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="customer_dashboard.html" class="nav-logo">Jeem Mall</a>
+            <div class="nav-links">
+                <a href="customer_dashboard.html" class="nav-link">Home</a>
+                <a href="cart.html" class="nav-link">Cart</a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="account.html" class="nav-link">Account</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+                <a href="login.html" class="nav-btn btn-logout">Log Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Account Settings</h1>
+        </div>
+
+        <div class="account-card">
+            <div class="profile-header">
+                <img src="https://ui-avatars.com/api/?name=John+Doe&background=4f46e5&color=fff&size=150" alt="Profile Picture" class="profile-pic">
+                <div class="profile-info">
+                    <h2 style="color: var(--text-main);">John Doe</h2>
+                    <p style="color: var(--text-muted);">Customer Member since 2023</p>
+                    <button class="btn" style="margin-top: 1rem; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main);">Change Photo</button>
+                </div>
+            </div>
+
+            <form onsubmit="event.preventDefault(); alert('Profile updated successfully!');">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="firstName">First Name</label>
+                        <input type="text" id="firstName" class="form-input" value="John" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="lastName">Last Name</label>
+                        <input type="text" id="lastName" class="form-input" value="Doe" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="form-input" value="john.doe@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="phone">Phone Number</label>
+                    <input type="tel" id="phone" class="form-input" value="+1 (555) 123-4567">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="address">Shipping Address</label>
+                    <textarea id="address" class="form-input" rows="3">123 Commerce St.
+Suite 400
+New York, NY 10001</textarea>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/customer.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Jeem Mall</title>
+    <link rel="stylesheet" href="css/customer.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="customer_dashboard.html" class="nav-logo">Jeem Mall</a>
+            <div class="nav-links">
+                <a href="customer_dashboard.html" class="nav-link">Home</a>
+                <a href="cart.html" class="nav-link">Cart</a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="account.html" class="nav-link">Account</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+                <a href="login.html" class="nav-btn btn-logout">Log Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Shopping Cart</h1>
+        </div>
+
+        <div class="cart-layout">
+            <!-- Cart Items -->
+            <div class="cart-items">
+                <div class="cart-item">
+                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800" alt="Headphones" class="cart-item-img">
+                    <div class="cart-item-details">
+                        <h3 class="cart-item-title">Wireless Noise-Canceling Headphones</h3>
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">Tech Haven</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <button style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); background: var(--bg-main); border-radius: 0.25rem; cursor: pointer; color: var(--text-main);">-</button>
+                                <span>1</span>
+                                <button style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); background: var(--bg-main); border-radius: 0.25rem; cursor: pointer; color: var(--text-main);">+</button>
+                            </div>
+                            <span class="price">$299.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cart-item">
+                    <img src="https://images.unsplash.com/photo-1526406915894-7bcd65f60845?auto=format&fit=crop&q=80&w=800" alt="Smartwatch" class="cart-item-img">
+                    <div class="cart-item-details">
+                        <h3 class="cart-item-title">Pro Smartwatch Series 8</h3>
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">Tech Haven</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <button style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); background: var(--bg-main); border-radius: 0.25rem; cursor: pointer; color: var(--text-main);">-</button>
+                                <span>2</span>
+                                <button style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); background: var(--bg-main); border-radius: 0.25rem; cursor: pointer; color: var(--text-main);">+</button>
+                            </div>
+                            <span class="price">$798.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Order Summary</h2>
+                
+                <div class="summary-row">
+                    <span>Subtotal (3 items)</span>
+                    <span>$1,097.99</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping</span>
+                    <span>$15.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (8%)</span>
+                    <span>$87.84</span>
+                </div>
+
+                <div class="summary-total">
+                    <span>Total</span>
+                    <span>$1,200.83</span>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%; margin-top: 2rem;" onclick="alert('Order Confirmed! You can check its status in the Orders page.')">Confirm Order</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/customer.js"></script>
+</body>
+</html>

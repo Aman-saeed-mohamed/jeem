@@ -1,0 +1,23 @@
+# ── Uploaded user files (never commit real uploads) ──────────
+uploads/products/*
+# Keep the directory itself tracked so the folder exists on clone
+!uploads/products/.gitkeep
+
+# ── PHP / Server config ───────────────────────────────────────
+*.log
+*.cache
+
+# ── XAMPP / OS junk ──────────────────────────────────────────
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ── IDE / Editor folders ─────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ── Environment / secrets ────────────────────────────────────
+.env
+config/local.php

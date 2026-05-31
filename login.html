@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>JEEM Login</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="left">
+
+<h1 class="logo">JEEM</h1>
+
+<h2>Welcome Back to JEEM</h2>
+
+<p>
+Your trusted digital marketplace.
+Explore shops, manage stores, and connect with thousands of customers.
+</p>
+
+</div>
+
+<div class="right">
+
+<h2>Sign In</h2>
+
+<form id="loginForm">
+
+<label>Full Name</label>
+<input type="text" placeholder="Enter your full name" required>
+
+<label>Email</label>
+<input type="email" placeholder="Enter your email" required>
+
+<label>Password</label>
+
+<div class="passwordBox">
+
+<input id="loginPassword" type="password" placeholder="Enter password" required>
+
+<button type="button" onclick="toggleLoginPassword()">Show</button>
+
+</div>
+
+<input type="hidden" id="verificationCode" value="123456">
+<div class="buttons">
+
+<button type="submit">Sign In</button>
+
+<a href="signup.html" class="btn2">Sign Up</a>
+
+<a href="signup.html" class="btn3">Register As a Shop</a>
+
+</div>
+
+
+</form>
+
+</div>
+
+</div>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>

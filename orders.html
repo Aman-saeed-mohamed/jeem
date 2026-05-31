@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Jeem Mall</title>
+    <link rel="stylesheet" href="css/customer.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="customer_dashboard.html" class="nav-logo">Jeem Mall</a>
+            <div class="nav-links">
+                <a href="customer_dashboard.html" class="nav-link">Home</a>
+                <a href="cart.html" class="nav-link">Cart</a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="account.html" class="nav-link">Account</a>
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle Dark Mode">🌙</button>
+                <a href="login.html" class="nav-btn btn-logout">Log Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Ongoing Orders</h1>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total Price</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>#ORD-8901</td>
+                        <td>Oct 24, 2023</td>
+                        <td>Wireless Headphones x1</td>
+                        <td>$323.99</td>
+                        <td><span class="badge badge-pending">Pending</span></td>
+                        <td><button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="cancelOrder(this)">Cancel Order</button></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-8895</td>
+                        <td>Oct 23, 2023</td>
+                        <td>Pro Smartwatch x2</td>
+                        <td>$861.84</td>
+                        <td><span class="badge badge-accepted">Accepted</span></td>
+                        <td><button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;" onclick="cancelOrder(this)">Cancel Order</button></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-8750</td>
+                        <td>Oct 15, 2023</td>
+                        <td>UltraBook Pro 14" x1</td>
+                        <td>$1,402.92</td>
+                        <td><span class="badge badge-delivered">Delivered</span></td>
+                        <td><button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>Cancel Order</button></td>
+                    </tr>
+                    <tr>
+                        <td>#ORD-8711</td>
+                        <td>Oct 10, 2023</td>
+                        <td>Gaming Mouse x1</td>
+                        <td>$64.50</td>
+                        <td><span class="badge badge-canceled">Canceled</span></td>
+                        <td><button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>Cancel Order</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/customer.js"></script>
+    <script>
+        function cancelOrder(btn) {
+            if (confirm("Are you sure you want to cancel this order?")) {
+                const row = btn.closest('tr');
+                const statusCell = row.querySelector('td:nth-child(5)');
+                
+                // Update Badge
+                statusCell.innerHTML = '<span class="badge badge-canceled">Canceled</span>';
+                
+                // Disable Button
+                btn.disabled = true;
+                
+                alert("Order has been canceled successfully.");
+            }
+        }
+    </script>
+</body>
+</html>
